@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -39,8 +40,8 @@ class Elevator {
     State state;
     mutex state_mutex;
 
-    void print_state() {
-        while (true) {
+    void thread_print_state() {
+        while (this->running) {
             this_thread::sleep_for(std::chrono::seconds(1));
             string state_str;
             {
@@ -57,27 +58,71 @@ class Elevator {
                         break;
                 }
             }
-            cout << "Elevator status: " << state_str
-                 << ", Current floor: " << state.floor << "\n";
+            cout << "Status: " << state_str << ", " << "Floor: " << state.floor
+                 << "\n";
+        }
+    }
+
+    void thread_simulate() {
+        while (this->running) {
+            this_thread::sleep_for(chrono::seconds(1));  // remove later
+        }
+    }
+
+    void transitState(int time, State nextState) {
+        this_thread::sleep_for(chrono::seconds(time));
+        {
+            lock_guard<mutex> lock(state_mutex);
+            state = nextState;
+        }
+    }
+
+    void thread_receiveCommand(int controller_sock) {
+        for (;;) {
+            int read_len = read(controller_sock, buf, BUFFERSIZ);
+            if (read_len == 0) {
+                return;
+            }
+
+            int command = buf[0] - '0';
+
+            // TODO
+            cout << "receive command: " << command << '\n';
         }
     }
 
    public:
+    bool running = false;
+    thread printThread, elevatorThread;
     Elevator() : state(Close, 1) {}
 
-    void run() { thread(&Elevator::print_state, this).detach(); }
+    void run() {
+        running = true;
+        printThread = thread(&Elevator::thread_print_state, this);
+        elevatorThread = thread(&Elevator::thread_simulate, this);
+    }
+
+    void stop() {
+        running = false;
+        cout << "Stopping elevator...\n";
+
+        printThread.join();
+        elevatorThread.join();
+
+        cout << "Elevator stopped!\n";
+    }
+
+    void addController(int sock) {
+        thread(&Elevator::thread_receiveCommand, this, sock).detach();
+    }
 };
 
-void receiveCommand(int& controller_sock) {
-    for (;;) {
-        int read_len = read(controller_sock, buf, BUFFERSIZ);
-        if (read_len == 0) {
-            return;
-        }
+Elevator elevator;
+void sig_term(int signo) {
+    cout << "Terminating...\n";
+    elevator.stop();
 
-        // TODO
-        cout << read_len << " : " << buf << '\n';
-    }
+    exit(0);
 }
 
 int main(int argc, char* argv[]) {
@@ -92,21 +137,19 @@ int main(int argc, char* argv[]) {
         server_ip = argv[1];
         server_port = atoi(argv[2]);
     }
+    signal(SIGINT, sig_term);
 
     int socket;
 
     cout << "Openning server on " << server_ip << ":" << server_port << "\n";
     tcp_server(socket, server_ip, server_port);
 
-    Elevator elevator;
     printElevatorMsg();
 
     elevator.run();
-
     for (;;) {
         int client_fd = acceptClient(socket);
-
-        thread(receiveCommand, client_fd);
+        elevator.addController(client_fd);
     }
     return 0;
 }
