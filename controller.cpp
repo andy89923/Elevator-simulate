@@ -43,9 +43,13 @@ int main(int argc, char* argv[]) {
         int command;
 
         cin >> command;
-        if (command <= 0 || command > 4) {
+        if (command == 0) {
             cout << "Controller Exit!\n";
             return 0;
+        }
+        if (command < 0 || command > 4) {
+            cout << "Invalid command: " << command << "\n";
+            continue;
         }
 
         buf[0] = '0' + command;

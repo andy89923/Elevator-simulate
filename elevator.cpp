@@ -40,6 +40,8 @@ class Elevator {
     State state;
     mutex state_mutex;
 
+    int cmd[5];
+
     void thread_print_state() {
         while (this->running) {
             this_thread::sleep_for(std::chrono::seconds(1));
@@ -65,7 +67,44 @@ class Elevator {
 
     void thread_simulate() {
         while (this->running) {
-            this_thread::sleep_for(chrono::seconds(1));  // remove later
+            if (this->state == State(Close, 1)) {
+                if (cmd[1] || cmd[3]) {
+                    transitState(0, State(Open, 1));
+                } else if (cmd[2] || cmd[4]) {
+                    transitState(1, State(Move, 1));
+                    transitState(5, State(Open, 2));
+                }
+                continue;
+            }
+            if (this->state == State(Open, 1)) {
+                do {
+                    cmd[1] = 0;
+                    cmd[2] = 0;
+                    cmd[3] = 0;
+                    this_thread::sleep_for(chrono::seconds(2));
+                } while (cmd[1] || cmd[3]);
+                transitState(0, State(Close, 1));
+                continue;
+            }
+            if (this->state == State(Open, 2)) {
+                do {
+                    cmd[1] = 0;
+                    cmd[2] = 0;
+                    cmd[4] = 0;
+                    this_thread::sleep_for(chrono::seconds(2));
+                } while (cmd[2] || cmd[4]);
+                transitState(0, State(Close, 2));
+                continue;
+            }
+            if (this->state == State(Close, 2)) {
+                if (cmd[2] || cmd[4]) {
+                    transitState(0, State(Open, 1));
+                } else if (cmd[1] || cmd[3]) {
+                    transitState(1, State(Move, 1));
+                    transitState(5, State(Open, 2));
+                }
+                continue;
+            }
         }
     }
 
@@ -86,15 +125,15 @@ class Elevator {
 
             int command = buf[0] - '0';
 
-            // TODO
             cout << "receive command: " << command << '\n';
+            this->cmd[command] = 1;
         }
     }
 
    public:
     bool running = false;
     thread printThread, elevatorThread;
-    Elevator() : state(Close, 1) {}
+    Elevator() : state(Close, 1) { memset(cmd, 0, sizeof(cmd)); }
 
     void run() {
         running = true;
