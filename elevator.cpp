@@ -105,6 +105,7 @@ class Elevator {
                 }
                 continue;
             }
+            this_thread::sleep_for(chrono::seconds(1));
         }
     }
 
@@ -139,14 +140,18 @@ class Elevator {
         running = true;
         printThread = thread(&Elevator::thread_print_state, this);
         elevatorThread = thread(&Elevator::thread_simulate, this);
+
+        elevatorThread.detach();
+        printThread.detach();
     }
 
     void stop() {
         running = false;
         cout << "Stopping elevator...\n";
 
-        printThread.join();
-        elevatorThread.join();
+        // Use detach mode, so no join required!
+        // printThread.join();
+        // elevatorThread.join();
 
         cout << "Elevator stopped!\n";
     }
@@ -169,9 +174,7 @@ int main(int argc, char* argv[]) {
     int server_port = 12345;
 
     if (argc < 3) {
-        cerr << "[Usage]\n";
-        cerr << "./elevator <ListenIP> <ListenPort>\n\n";
-        cout << "Use default server IP & Port!\n";
+        cout << "No IP & Port specify, use default server IP & Port!\n";
     } else {
         server_ip = argv[1];
         server_port = atoi(argv[2]);

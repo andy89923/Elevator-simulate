@@ -21,9 +21,7 @@ int main(int argc, char* argv[]) {
     int server_port = 12345;
 
     if (argc < 3) {
-        cerr << "[Usage]\n";
-        cerr << "./controller <ElevatorIP> <ElevatorPort>\n\n";
-        cout << "Use default server IP & Port.\n";
+        cout << "No server specify, use default server IP & Port.\n";
     } else {
         server_ip = argv[1];
         server_port = atoi(argv[2]);
