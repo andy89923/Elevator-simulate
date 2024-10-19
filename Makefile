@@ -3,13 +3,14 @@ CFLAGS=-std=c++17 -Wall -O3 -pedantic -pthread
 
 all: elevator controller 
 
-UTILS = socket.cpp
+UTILSDIR = utils
+UTILS = $(wildcard $(UTILSDIR)/*.cpp)
 
-elevator:
-	$(CXX) elevator.cpp $(UTILS) -o elevator $(CFLAGS)
+elevator: elevator.cpp $(UTILS)
+	$(CXX) elevator.cpp -I $(UTILSDIR) -o elevator $(CFLAGS)
 
-controller:
-	$(CXX) controller.cpp $(UTILS) -o controller $(CFLAGS)
+controller: controller.cpp $(UTILS)
+	$(CXX) controller.cpp -I $(UTILSDIR) -o controller $(CFLAGS)
 
 clean:
 	rm -f elevator controller
