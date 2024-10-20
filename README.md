@@ -19,6 +19,9 @@ The system consists of two main components:
 
 - **TCP Communication**: The controller and elevator simulation communicate using TCP sockets.
 
+- **State Diagram**
+![state](./src/image.png)
+
 ## Components
 
 ### Controller
@@ -97,3 +100,6 @@ Openning server on 127.0.0.1:12345
 
 ## Acknowledgements
 This project uses C++ standard libraries and the POSIX socket API for networking.
+
+## Demo 
+![demo](./src/demo.png) 
